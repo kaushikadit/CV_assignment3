@@ -8,6 +8,7 @@ from typing import List, Tuple, Optional
 import numpy as np
 import random
 
+random.seed(0)
 
 def trim(image):
     # Convert the image to grayscale
@@ -124,42 +125,29 @@ def warp_perspective(img, transformation_matrix, output_size):
     """
     width, height = output_size
     output = np.zeros((height, width, 3) if len(img.shape) == 3 else (height, width), dtype=img.dtype)
-
-    # Get input image dimensions
     input_height, input_width = img.shape[:2]
-
-    # Create meshgrid for all output pixel coordinates
     y, x = np.meshgrid(np.arange(height), np.arange(width), indexing='ij')
-
-    # Create homogeneous coordinates
     homogeneous_coords = np.stack([x, y, np.ones_like(x)], axis=-1)
-
-    # Reshape coordinates to 2D array
     points = homogeneous_coords.reshape(-1, 3)
 
     # Apply inverse transformation
     H_inv = np.linalg.inv(transformation_matrix)
     transformed_points = points @ H_inv.T
 
-    # Convert back from homogeneous coordinates
     transformed_points = transformed_points[:, :2] / transformed_points[:, 2:]
     transformed_points = transformed_points.reshape(height, width, 2)
 
-    # Get source coordinates
     src_x = transformed_points[:, :, 0]
     src_y = transformed_points[:, :, 1]
 
-    # Create mask for valid coordinates
     valid_mask = (
         (src_x >= 0) & (src_x < input_width - 1) &
         (src_y >= 0) & (src_y < input_height - 1)
     )
 
-    # Round to nearest pixel
     src_x = src_x.astype(np.int32)
     src_y = src_y.astype(np.int32)
 
-    # Copy valid pixels
     if len(img.shape) == 3:
         output[valid_mask] = img[src_y[valid_mask], src_x[valid_mask]]
     else:
@@ -181,25 +169,19 @@ def solution(left_img, right_img):
     # Get dimensions
     rows1, cols1 = left_img.shape[:2]
     rows2, cols2 = right_img.shape[:2]
-
-    # Create points for the left image corners
     src_points = np.float32([[0, 0], [cols1, 0], [cols1, rows1], [0, rows1]])
 
-    # Calculate the size of the output image
     x_min = min(0, cols1)
     y_min = min(0, rows1)
     x_max = max(cols1, cols2)
     y_max = max(rows1, rows2)
 
-    # Create the output image
     output_size = (x_max - x_min, y_max - y_min)
     output_img = np.zeros((y_max - y_min, x_max - x_min, 3), dtype=np.uint8)
 
-    # Copy the right image to the output
     right_region = output_img[0:rows2, 0:cols2]
     right_region[:] = right_img
 
-    # Create points for the destination corners (shifted by x_min, y_min)
     dst_points = np.float32([
         [0 - x_min, 0 - y_min],
         [cols1 - x_min, 0 - y_min],
@@ -207,11 +189,9 @@ def solution(left_img, right_img):
         [0 - x_min, rows1 - y_min]
     ])
 
-    # Get the perspective transform and apply it
     H = get_perspective_transform(src_points, dst_points)
     warped_left = warp_perspective(left_img, H, (x_max - x_min, y_max - y_min))
 
-    # Combine the images
     mask = (warped_left != 0).any(axis=2)
     output_img[mask] = warped_left[mask]
 
@@ -245,9 +225,7 @@ def solution(left_img, right_img):
     output_img[(-y_min):rows1+(-y_min), (-x_min):cols1+(-x_min)] = right_img
     result_img = output_img
     return result_img, final_H
-    
-    # TO DO: implement your solution here
-    # raise NotImplementedError
+
     
 def get_keypoint(left_img, right_img):
     kp1, des1 = cv2.SIFT_create().detectAndCompute(left_img, None)
@@ -320,29 +298,17 @@ class PanaromaStitcher():
         all_images = sorted(glob.glob(imf+os.sep+'*'))
         print('Found {} Images for stitching'.format(len(all_images)))
 
-        ####  Your Implementation here
-        #### you can use functions, class_methods, whatever!! Examples are illustrated below. Remove them and implement yours.
-        #### Just make sure to return final stitched image and all Homography matrices from here
-        self.say_hi()
-        self.do_something()
-        self.do_something_more()
-
         some_function.some_func()
         folder_func.foo()
 
         # Collect all homographies calculated for pair of images and return
         homography_matrix_list =[]
-        # Return Final panaroma
-        #stitcher = cv2.Stitcher_create()
-        # stitcher = CustomStitcher()
-        # print("%"*50,"Stitcher object created","%"*50)
-        # status, stitched_image = stitcher.stitch([cv2.imread(im) for im in all_images])
 
         if len(all_images) < 2:
             print('Need atleast 2 images to stitch')
             return None
         else:
-            resized_size = 0.25 if len(all_images) >= 6 else 0.75
+            resized_size = 0.4 if len(all_images) >= 6 else 0.7
             print('Resized Size:', resized_size, " ", len(all_images))
             result_img = cv2.resize(cv2.imread(all_images[0]), (0,0), fx=resized_size, fy=resized_size)
             for i in range(1, 5):
