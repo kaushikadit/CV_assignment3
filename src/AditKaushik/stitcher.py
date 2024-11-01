@@ -8,7 +8,7 @@ from typing import List, Tuple, Optional
 import numpy as np
 import random
 
-random.seed(0)
+random.seed(1234)
 
 def trim(image):
     # Convert the image to grayscale
