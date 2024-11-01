@@ -57,47 +57,6 @@ def perspective_transform(points, transformation_matrix):
 
     return transformed_points
 
-def get_perspective_transform(src_points, dst_points):
-    """
-    Compute the 3x3 perspective transformation matrix.
-
-    Parameters:
-    src_points: Source coordinates as array-like object of shape (4,2)
-    dst_points: Destination coordinates as array-like object of shape (4,2)
-
-    Returns:
-    numpy.ndarray: 3x3 perspective transformation matrix
-    """
-    src_points = np.array(src_points, dtype=np.float32)
-    dst_points = np.array(dst_points, dtype=np.float32)
-    assert src_points.shape == (4, 2), "Source points must be of shape (4,2)"
-    assert dst_points.shape == (4, 2), "Destination points must be of shape (4,2)"
-
-    A = np.zeros((8, 8))
-
-    for i in range(4):
-        x, y = src_points[i]
-        u, v = dst_points[i]
-
-        A[i*2] = [x, y, 1, 0, 0, 0, -x*u, -y*u]
-        A[i*2+1] = [0, 0, 0, x, y, 1, -x*v, -y*v]
-
-    b = dst_points.reshape(8)
-
-    try:
-        x = np.linalg.solve(A, b)
-    except np.linalg.LinAlgError:
-
-        x = np.linalg.lstsq(A, b, rcond=None)[0]
-
-    H = np.array([
-        [x[0], x[1], x[2]],
-        [x[3], x[4], x[5]],
-        [x[6], x[7], 1.0]
-    ])
-
-    return H
-
 def warp_perspective(img, transformation_matrix, output_size):
     """
     Apply perspective transformation to an image.
@@ -141,48 +100,6 @@ def warp_perspective(img, transformation_matrix, output_size):
         output[valid_mask] = img[src_y[valid_mask], src_x[valid_mask]]
 
     return output
-
-def solution(left_img, right_img):
-    """
-    Stitch two images together.
-
-    Parameters:
-    left_img: Left image
-    right_img: Right image
-
-    Returns:
-    numpy.ndarray: Stitched image
-    """
-    # Get dimensions
-    rows1, cols1 = left_img.shape[:2]
-    rows2, cols2 = right_img.shape[:2]
-    src_points = np.float32([[0, 0], [cols1, 0], [cols1, rows1], [0, rows1]])
-
-    x_min = min(0, cols1)
-    y_min = min(0, rows1)
-    x_max = max(cols1, cols2)
-    y_max = max(rows1, rows2)
-
-    output_size = (x_max - x_min, y_max - y_min)
-    output_img = np.zeros((y_max - y_min, x_max - x_min, 3), dtype=np.uint8)
-
-    right_region = output_img[0:rows2, 0:cols2]
-    right_region[:] = right_img
-
-    dst_points = np.float32([
-        [0 - x_min, 0 - y_min],
-        [cols1 - x_min, 0 - y_min],
-        [cols1 - x_min, rows1 - y_min],
-        [0 - x_min, rows1 - y_min]
-    ])
-
-    H = get_perspective_transform(src_points, dst_points)
-    warped_left = warp_perspective(left_img, H, (x_max - x_min, y_max - y_min))
-
-    mask = (warped_left != 0).any(axis=2)
-    output_img[mask] = warped_left[mask]
-
-    return output_img
 
 def solution(left_img, right_img):
     """
