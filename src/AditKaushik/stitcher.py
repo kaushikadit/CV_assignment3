@@ -36,28 +36,22 @@ def perspective_transform(points, transformation_matrix):
     Returns:
     numpy.ndarray: Transformed points in same shape as input
     """
-    # Store original shape to return same format
     original_shape = points.shape
 
-    # Reshape points to (N, 2) if necessary
     if len(points.shape) == 3:
         points = points.reshape(-1, 2)
 
-    # Convert to homogeneous coordinates
     homogeneous_points = np.hstack([points, np.ones((points.shape[0], 1))])
 
-    # Apply transformation
     transformed_points = homogeneous_points @ transformation_matrix.T
 
     # Convert back from homogeneous coordinates
     # Divide by the homogeneous coordinate (z)
     transformed_points = transformed_points[:, :2] / transformed_points[:, 2:]
 
-    # Handle division by zero
     mask = np.abs(transformed_points) > 1e10
     transformed_points[mask] = 0
 
-    # Restore original shape if necessary
     if len(original_shape) == 3:
         transformed_points = transformed_points.reshape(original_shape)
 
@@ -74,15 +68,11 @@ def get_perspective_transform(src_points, dst_points):
     Returns:
     numpy.ndarray: 3x3 perspective transformation matrix
     """
-    # Convert inputs to numpy arrays if they aren't already
     src_points = np.array(src_points, dtype=np.float32)
     dst_points = np.array(dst_points, dtype=np.float32)
-
-    # Ensure the arrays have the correct shapes
     assert src_points.shape == (4, 2), "Source points must be of shape (4,2)"
     assert dst_points.shape == (4, 2), "Destination points must be of shape (4,2)"
 
-    # Create the coefficient matrix A
     A = np.zeros((8, 8))
 
     for i in range(4):
@@ -92,17 +82,14 @@ def get_perspective_transform(src_points, dst_points):
         A[i*2] = [x, y, 1, 0, 0, 0, -x*u, -y*u]
         A[i*2+1] = [0, 0, 0, x, y, 1, -x*v, -y*v]
 
-    # Create the constants vector b
     b = dst_points.reshape(8)
 
-    # Solve the linear system
     try:
         x = np.linalg.solve(A, b)
     except np.linalg.LinAlgError:
-        # If matrix is singular, use least squares solution
+
         x = np.linalg.lstsq(A, b, rcond=None)[0]
 
-    # Construct the transformation matrix
     H = np.array([
         [x[0], x[1], x[2]],
         [x[3], x[4], x[5]],
@@ -308,8 +295,8 @@ class PanaromaStitcher():
             print('Need atleast 2 images to stitch')
             return None
         else:
-            resized_size = 0.4 if len(all_images) >= 6 else 0.6
-            print('Resized Size:', resized_size, " ", len(all_images))
+            resized_size = 0.4 if len(all_images) >= 6 else 0.55
+            print('Image size is reduced to:', resized_size, "times the original size")
             result_img = cv2.resize(cv2.imread(all_images[0]), (0,0), fx=resized_size, fy=resized_size)
             for i in range(1, 5):
                 left_img = result_img
@@ -320,12 +307,3 @@ class PanaromaStitcher():
         stitched_image = result_img
         
         return trim(stitched_image), homography_matrix_list
-
-    def say_hi(self):
-        print('Hii From Adit Kaushik..')
-    
-    def do_something(self):
-        return None
-    
-    def do_something_more(self):
-        return None
