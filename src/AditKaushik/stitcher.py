@@ -252,7 +252,7 @@ def ransac(good_pts):
     best_inliers = []
     final_H = []
     t=5
-    for i in range(500):
+    for i in range(250):
         random_pts = random.choices(good_pts, k=4)
         H = homography(random_pts)
         inliers = []
