@@ -252,7 +252,7 @@ def ransac(good_pts):
     best_inliers = []
     final_H = []
     t=5
-    for i in range(1000):
+    for i in range(500):
         random_pts = random.choices(good_pts, k=4)
         H = homography(random_pts)
         inliers = []
@@ -292,7 +292,7 @@ class PanaromaStitcher():
             print('Need atleast 2 images to stitch')
             return None
         else:
-            resized_size = 0.3 if len(all_images) >= 6 else 0.6
+            resized_size = 0.25 if len(all_images) >= 6 else 0.6
             print('Image size is reduced to:', resized_size, "times the original size")
             result_img = cv2.resize(cv2.imread(all_images[0]), (0,0), fx=resized_size, fy=resized_size)
             for i in range(1, 5):
